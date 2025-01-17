@@ -1,24 +1,34 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
+// --------------------------------
+// Contexto de Auth
+// --------------------------------
+export const AuthContext = React.createContext<{
+  userToken: string | null;
+  signIn: () => void;
+  signOut: () => void;
+}>(null!);
+
+// --------------------------------
+// Configuración de expo-router
+// --------------------------------
 export {
-  // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: '(auth)',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -27,7 +37,6 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -39,7 +48,7 @@ export default function RootLayout() {
   }, [loaded]);
 
   if (!loaded) {
-    return null;
+    return null; // Muestra algo mientras cargan fuentes
   }
 
   return <RootLayoutNav />;
@@ -47,13 +56,68 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const [userToken, setUserToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simula la carga del token
+  useEffect(() => {
+    const checkToken = async () => {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsLoading(false);
+    };
+    checkToken();
+  }, []);
+
+  const protectedRoutes = ['/two', '/tabs', '/another-tab'];
+
+  useEffect(() => {
+    console.log('Verificando acceso a rutas...');
+    if (isLoading) return;
+
+    // Redirigir a login si no está autenticado
+    const isProtectedRoute = protectedRoutes.includes(pathname);
+    if (!userToken && isProtectedRoute) {
+      console.log(`Acceso restringido a ${pathname}: Redirigiendo a /login`);
+      router.replace('/(auth)/login');
+    }
+  }, [isLoading, userToken, pathname]);
+
+  const authContextValue = useMemo(
+    () => ({
+      userToken,
+      signIn: () => setUserToken('dummy-token'),
+      signOut: () => setUserToken(null),
+    }),
+    [userToken]
+  );
+
+  if (isLoading) {
+    return <SplashScreenComponent />;
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <AuthContext.Provider value={authContextValue}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          {userToken ? (
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          ) : (
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          )}
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        </Stack>
+      </ThemeProvider>
+    </AuthContext.Provider>
+  );
+}
+
+function SplashScreenComponent() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Cargando...</Text>
+    </View>
   );
 }
