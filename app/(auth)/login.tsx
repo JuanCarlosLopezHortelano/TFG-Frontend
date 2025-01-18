@@ -3,10 +3,15 @@ import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import signIn from '../services/cognitoConfig';
 import { AuthContext } from '../_layout';
+import { useAuthFlow } from '@/context/authFlowContext';
 
 export default function LoginScreen() {
+
+  const {lastRegisteredEmail} = useAuthFlow();
+
+
   const { signIn: signInContext } = React.useContext(AuthContext);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(lastRegisteredEmail || '');
   const [password, setPassword] = useState('');
   const router = useRouter();
 

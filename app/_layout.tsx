@@ -6,7 +6,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import 'react-native-reanimated';
-
+import { AuthFlowProvider } from '../context/authFlowContext';
+import * as SecureStore from 'expo-secure-store';
 import { useColorScheme } from '@/components/useColorScheme';
 
 // --------------------------------
@@ -32,6 +33,10 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+
+
+
+
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
@@ -55,23 +60,35 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
+
   const colorScheme = useColorScheme();
   const pathname = usePathname();
-  const router = useRouter();
 
   const [userToken, setUserToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+
+  const router = useRouter();
   // Simula la carga del token
-  useEffect(() => {
-    const checkToken = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIsLoading(false);
-    };
-    checkToken();
+    useEffect(() => {
+    async function loadToken() {
+      try {
+        // Lee el token guardado
+        const storedAccessToken = await SecureStore.getItemAsync('accessToken');
+        if (storedAccessToken) {
+          // Chequea si todavía es válido (opcional, ver paso 3)
+          setUserToken(storedAccessToken);
+        }
+      } catch (err) {
+        console.log('Error loading token', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadToken();
   }, []);
 
-  const protectedRoutes = ['/two', '/tabs', '/another-tab'];
+  const protectedRoutes = ['/','/one' ,'/two', '/tabs', '/another-tab', '/index'];
 
   useEffect(() => {
     console.log('Verificando acceso a rutas...');

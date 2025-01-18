@@ -1,7 +1,7 @@
 // app/auth/_layout.tsx
 import { Stack } from 'expo-router';
 import React from 'react';
-import { AuthFlowProvider } from '../context/authFlowContext';
+import { AuthFlowProvider } from '../../context/authFlowContext';
 
 console.log('Auth Layout cargado');
 

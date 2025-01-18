@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { confirmSignUp } from '../services/cognitoConfig';
-import { useAuthFlow } from '../context/authFlowContext';
+import { useAuthFlow } from '../../context/authFlowContext';
 
 export default function ConfirmScreen() {
   const { lastRegisteredEmail } = useAuthFlow();
