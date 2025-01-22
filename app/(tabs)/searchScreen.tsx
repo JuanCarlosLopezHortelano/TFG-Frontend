@@ -5,31 +5,52 @@ import {
   View, 
   TextInput, 
   Pressable, 
-  ScrollView 
+  ScrollView, 
+  Image
 } from 'react-native';
+
+// Mocks
+import { mockJobs } from '../services/mock/mockJobs';
+import { mockUsers } from '../services/mock/mockUser';
 
 export default function SearchScreen() {
   const [filter, setFilter] = useState<'todo' | 'tareas' | 'personas'>('todo');
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const tareas = [
-    {id: 1, title: 'Montaje de Stand', location: 'Centro Convenciones', rate: '10€/hora'},
-    {id: 2, title: 'Reparto de Flyers', location: 'Zona Comercial', rate: '9€/hora'},
-  ];
+  // Diccionario de íconos para cada categoría (opcional)
+  const categoryIcons: Record<string, string> = {
+    Eventos: '🎉',
+    Marketing: '📢',
+    Hostelería: '🍽',
+    Logística: '🚚',
+    Limpieza: '🧹',
+    // Añade más según tus categorías
+  };
 
-  const personas = [
-    {id: 1, name: 'Andrea G.', skill: 'Promotora de eventos', rating: 4.5},
-    {id: 2, name: 'Juan P.', skill: 'Camarero con experiencia', rating: 4.0},
-  ];
+  // Tareas: Vienen de mockJobs
+  const tareas = mockJobs;
+
+  // Personas: Podrías filtrar por roles.includes('worker') o algo similar
+  const personas = mockUsers.filter((u) => u.aptitudes);
 
   const showTareas = filter === 'todo' || filter === 'tareas';
   const showPersonas = filter === 'todo' || filter === 'personas';
 
+  function handleOpenJobDetail(jobId: string) {
+    alert(`Ver detalle de la tarea con id = ${jobId}`);
+    // router.push({ pathname: 'taskDetail', params: { jobId } })
+  }
+
+  function handleOpenProfile(userId: string) {
+    alert(`Ver perfil del userId = ${userId}`);
+    // router.push({ pathname: 'publicProfile', params: { userId } })
+  }
+
   return (
     <View style={styles.container}>
+      
       {/* Barra Superior */}
       <View style={styles.topBar}>
-        {/* Pequeño buscador */}
         <View style={styles.searchWrapper}>
           <TextInput 
             style={styles.searchInput}
@@ -40,7 +61,6 @@ export default function SearchScreen() {
           />
         </View>
 
-        {/* Si el buscador está en foco, mostrar "…" en vez de los filtros */}
         {searchFocused ? (
           <Pressable style={styles.dotButton}>
             <Text style={styles.dotButtonText}>…</Text>
@@ -75,19 +95,50 @@ export default function SearchScreen() {
         )}
       </View>
 
-      <ScrollView style={styles.resultsContainer} contentContainerStyle={{paddingBottom: 100}}>
+      {/* Resultados */}
+      <ScrollView style={styles.resultsContainer} contentContainerStyle={{ paddingBottom: 100 }}>
         
         {/* Sección de Tareas */}
         {showTareas && (
           <>
             <Text style={styles.sectionTitle}>Tareas Disponibles</Text>
-            {tareas.map((t) => (
-              <View key={t.id} style={styles.taskCard}>
-                <Text style={styles.taskTitle}>{t.title}</Text>
-                <Text style={styles.taskDetail}>Ubicación: {t.location}</Text>
-                <Text style={styles.taskDetail}>Tarifa: {t.rate}</Text>
-              </View>
-            ))}
+            {tareas.map((job) => {
+              const employer = mockUsers.find((u) => u.id === job.postedBy);
+              // Ícono de categoría
+              const catIcon = categoryIcons[job.category] || '🛠';
+
+              return (
+                <View key={job.id} style={styles.taskCard}>
+                  {/* Encabezado: employer + link a job detail */}
+                  <View style={styles.taskHeader}>
+                    {employer && (
+                      <Pressable onPress={() => handleOpenProfile(employer.id)} style={styles.employerContainer}>
+                        <Image source={{ uri: employer.avatarUrl }} style={styles.employerAvatar} />
+                        <Text style={styles.employerName}>{employer.name}</Text>
+                      </Pressable>
+                    )}
+                    <Pressable onPress={() => handleOpenJobDetail(job.id)}>
+                      <Text style={styles.moreLink}>Ver más</Text>
+                    </Pressable>
+                  </View>
+
+                  {/* Ícono de categoría y título */}
+                  <Text style={styles.taskTitle}>
+                    {catIcon} {job.title}
+                  </Text>
+                  <Text style={styles.taskDetail}>Categoría: {job.category}</Text>
+                  <Text style={styles.taskDetail}>Ubicación: {job.location}</Text>
+                  <Text style={styles.taskDetail}>Tarifa: {job.rate} €/hora</Text>
+
+                  {/* Breve descripción */}
+                  {job.shortDescription && (
+                    <Text style={styles.taskDesc}>
+                      {job.shortDescription}
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
           </>
         )}
 
@@ -97,9 +148,20 @@ export default function SearchScreen() {
             <Text style={styles.sectionTitle}>Personas Disponibles</Text>
             {personas.map((p) => (
               <View key={p.id} style={styles.personCard}>
-                <Text style={styles.personName}>{p.name}</Text>
-                <Text style={styles.personDetail}>{p.skill}</Text>
-                <Text style={styles.personDetail}>Valoración: ⭐ {p.rating}</Text>
+                <View style={styles.personHeader}>
+                  <Image source={{ uri: p.avatarUrl }} style={styles.personAvatar} />
+                  <View style={styles.personInfo}>
+                    <Text style={styles.personName}>{p.name}</Text>
+                    {/* Muestra cuántas aptitudes tiene, o rating si existe */}
+                    <Text style={styles.personSkill}>
+                      {p.aptitudes.length} aptitudes
+                    </Text>
+                    <Text style={styles.personRating}>Valoración: ⭐ {p.rating.toFixed(1)}</Text>
+                  </View>
+                </View>
+                <Pressable style={styles.personMoreBtn} onPress={() => handleOpenProfile(p.id)}>
+                  <Text style={styles.personMoreText}>Ver Perfil</Text>
+                </Pressable>
               </View>
             ))}
           </>
@@ -110,6 +172,7 @@ export default function SearchScreen() {
   );
 }
 
+// Estilos
 const containerBg = '#E9ECF2'; 
 const elementBg = '#FFFFFF';   
 const shadowColor = '#000';
@@ -118,7 +181,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: containerBg,
-    paddingTop: 30, // Menos padding top para que el buscador esté más arriba
+    paddingTop: 30,
   },
   topBar: {
     flexDirection: 'row',
@@ -129,7 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 30,
     justifyContent: 'space-between',
-    shadowColor: shadowColor,
+    shadowColor,
     shadowOffset: { width: 4, height: 4},
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -154,7 +217,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     marginLeft: 5,
-    shadowColor: shadowColor,
+    shadowColor,
     shadowOffset: { width: 2, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -177,7 +240,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     marginLeft: 5,
-    shadowColor: shadowColor,
+    shadowColor,
     shadowOffset: { width: 2, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -199,48 +262,109 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     marginTop: 10,
   },
+  // Tareas
   taskCard: {
     backgroundColor: elementBg,
     borderRadius: 15,
     padding: 15,
     marginBottom: 15,
-    shadowColor: shadowColor,
+    shadowColor,
     shadowOffset: { width: 4, height: 4},
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
+  },
+  taskHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  employerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  employerAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 5,
+  },
+  employerName: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  moreLink: {
+    fontSize: 14,
+    color: '#4C74D9',
+    textDecorationLine: 'underline',
   },
   taskTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   taskDetail: {
     fontSize: 14,
     color: '#555',
-    marginBottom: 4,
+    marginBottom: 3,
   },
+  taskDesc: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 5,
+    fontStyle: 'italic',
+  },
+  // Personas
   personCard: {
     backgroundColor: elementBg,
     borderRadius: 15,
     padding: 15,
     marginBottom: 15,
-    shadowColor: shadowColor,
+    shadowColor,
     shadowOffset: { width: 4, height: 4},
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
   },
+  personHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  personAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  personInfo: {
+    flex: 1,
+  },
   personName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
   },
-  personDetail: {
+  personSkill: {
     fontSize: 14,
     color: '#555',
-    marginBottom: 4,
+  },
+  personRating: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 2,
+  },
+  personMoreBtn: {
+    backgroundColor: '#4C74D9',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-end',
+  },
+  personMoreText: {
+    color: '#fff',
+    fontSize: 14,
   },
 });

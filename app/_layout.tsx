@@ -124,7 +124,20 @@ function RootLayoutNav() {
           ) : (
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           )}
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen
+              name="taskDetail"
+              options={{
+                // Para mostrar la cabecera
+                headerShown: true,
+                
+                // Transición con un slide horizontal
+                presentation: 'card',
+                animation: 'slide_from_right',
+
+                // Podemos poner un título
+                title: 'Oferta de Trabajo',
+              }}
+            />
         </Stack>
       </ThemeProvider>
     </AuthContext.Provider>
