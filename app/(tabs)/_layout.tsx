@@ -6,7 +6,7 @@ import { Pressable } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-
+import MyProfileHeaderMenu from '../../myProfile/MyProfileHeaderMenu';
 // Un helper para colocar iconos
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -44,8 +44,9 @@ export default function TabLayout() {
       options={{
         title: 'Perfil',
         tabBarIcon: ({ color }) => <TabBarIcon name="user-circle-o" color={color} />,
+       
       }}
-    />
+/>
   
     {/* 4) Buscar */}
     <Tabs.Screen

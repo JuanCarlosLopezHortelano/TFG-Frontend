@@ -88,7 +88,7 @@ function RootLayoutNav() {
     loadToken();
   }, []);
 
-  const protectedRoutes = ['/','/one' ,'/two', '/tabs', '/another-tab', '/index'];
+  const protectedRoutes = ['/taskDetailModal','/userDetails' ,'/homeUI', '/myPostulations', '/myProfile', '/searchScreen'];
 
   useEffect(() => {
     console.log('Verificando acceso a rutas...');

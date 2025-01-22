@@ -1,5 +1,5 @@
 // app/(tabs)/MyProfileScreen.tsx
-import React from 'react';
+import React, { useContext, useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -8,9 +8,12 @@ import {
   ScrollView, 
   Pressable,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { Calendar } from 'react-native-calendars';
+
+import { AuthContext } from '../_layout'; // Ajusta la ruta si tu context está en otro archivo
 
 // Importa tus mocks
 import { mockUsers } from '../services/mock/mockUser';
@@ -26,6 +29,15 @@ type MarkedDates = {
   };
 };
 export default function MyProfileScreen() {
+
+   // Menú flotante
+   const [menuVisible, setMenuVisible] = useState(false);
+    const { signOut } = useContext(AuthContext);
+    function handleSignOut() {
+      signOut();
+    }
+
+
   // Suponemos que el usuario actual es 'u123'
   const me = mockUsers.find((u) => u.id === 'u123') || mockUsers[0];
 
@@ -49,6 +61,43 @@ export default function MyProfileScreen() {
   }
 
   return (
+
+
+    <View style={{ flex: 1 }}>
+
+    {/* Botón flotante “...” en top-right */}
+    <View style={styles.floatingMenuButton}>
+      <Pressable onPress={() => setMenuVisible(!menuVisible)}>
+        <Text style={{ fontSize: 20 }}>⋮</Text>
+      </Pressable>
+    </View>
+
+    {/* El menú en un Modal */}
+    <Modal
+      transparent
+      visible={menuVisible}
+      animationType="fade"
+      onRequestClose={() => setMenuVisible(false)}
+    >
+      <Pressable style={styles.overlay} onPress={() => setMenuVisible(false)}>
+        <View style={styles.menuContainer}>
+          <Pressable style={styles.menuItem} onPress={() => {
+            setMenuVisible(false);
+            alert('Ir a Configuraciones (ejemplo)');
+          }}>
+            <Text style={styles.menuItemText}>Configuraciones</Text>
+          </Pressable>
+          <Pressable style={styles.menuItem} onPress={() => {
+            setMenuVisible(false);
+            handleSignOut();
+          }}>
+            <Text style={[styles.menuItemText, { color: 'red' }]}>Cerrar Sesión</Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    </Modal>
+
+
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
       
       {/* Encabezado del perfil */}
@@ -62,7 +111,7 @@ export default function MyProfileScreen() {
         <Text style={styles.aboutText}>{me.about}</Text>
       </View>
 
-     
+
        {/* Sección de contacto */}
                 <View style={styles.sectionContainer}>
                   <Text style={styles.sectionTitle}>Contacto</Text>
@@ -87,7 +136,7 @@ export default function MyProfileScreen() {
                   ))}
                 </View>
 
-         
+
 
       {/* Botón para Editar Perfil */}
       <Pressable style={styles.editButton} onPress={handleEditProfile}>
@@ -152,6 +201,7 @@ export default function MyProfileScreen() {
         )}
       </View>
     </ScrollView>
+  </View>
   );
 }
 
@@ -159,6 +209,8 @@ const elementBg = '#FFFFFF';
 const shadowColor = '#000';
 
 const styles = StyleSheet.create({
+
+
   container: {
     flex: 1,
     backgroundColor: '#E9ECF2',
@@ -254,4 +306,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
   },
+  floatingMenuButton: {
+    position: 'absolute',
+    top: 40,
+    right: 15,
+    zIndex: 999, // Para que quede por encima
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  menuContainer: {
+    marginTop: 60,
+    marginRight: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    width: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  menuItem: {
+    paddingVertical: 8,
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+
 });
