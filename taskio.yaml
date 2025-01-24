@@ -38,7 +38,7 @@ Resources:
                   "body": "OK, healthy!"
               }
 
-    TaskioJobsLambda:
+  TaskioJobsLambda:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "TaskioJobsLambda-${EnvName}"
@@ -95,7 +95,7 @@ Resources:
         - StatusCode: "200"
 
     # Método GET /jobs -> Lambda
-    TaskioJobsGetMethod:
+  TaskioJobsGetMethod:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref TaskioApiGateway
