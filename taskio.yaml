@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Ejemplo mínimo con 1 Lambda (Python) + API Gateway /health"
+Description: "PRUEBAAAAA"
 
 Parameters:
   EnvName:
