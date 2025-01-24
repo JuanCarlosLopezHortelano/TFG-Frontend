@@ -22,7 +22,7 @@ Resources:
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 
-  # Lambda en Python
+  # Lambda para HealthCheck
   TaskioHealthCheckLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -38,6 +38,7 @@ Resources:
                   "body": "OK, healthy!"
               }
 
+  # Lambda para Jobs
   TaskioJobsLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -48,13 +49,12 @@ Resources:
       Code:
         ZipFile: |
           def handler(event, context):
-              # EJEMPLO sencillo. Luego leerás de DynamoDB, etc.
               return {
                   "statusCode": 200,
                   "body": "Aquí va la lista de Jobs!"
               }
 
-  # API Gateway 
+  # API Gateway
   TaskioApiGateway:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -68,7 +68,7 @@ Resources:
       ParentId: !GetAtt TaskioApiGateway.RootResourceId
       PathPart: "health"
 
-  # Recurso /health
+  # Recurso /jobs
   TaskioJobsResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -87,14 +87,13 @@ Resources:
       Integration:
         Type: "AWS"
         IntegrationHttpMethod: "POST"
-        # Aquí la referencia a "TaskioHealthCheckLambda" con .Arn
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioHealthCheckLambda.Arn}/invocations"
         IntegrationResponses:
           - StatusCode: "200"
       MethodResponses:
         - StatusCode: "200"
 
-    # Método GET /jobs -> Lambda
+  # Método GET /jobs -> Lambda
   TaskioJobsGetMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -111,18 +110,14 @@ Resources:
       MethodResponses:
         - StatusCode: "200"
 
-  # Permitir que API Gateway invoque la Lambda
+  # Permitir que API Gateway invoque las Lambdas
   PermissionTaskioHealthCheckApi:
     Type: AWS::Lambda::Permission
     Properties:
-      # Igual,test la Lambda es "TaskioHealthCheckLambda"
       FunctionName: !GetAtt TaskioHealthCheckLambda.Arn
       Action: "lambda:InvokeFunction"
       Principal: "apigateway.amazonaws.com"
-      # Use la referencia a "TaskioApiGateway" y la ruta GET /health
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*/GET/health"
-
-
 
   PermissionTaskioJobsApi:
     Type: AWS::Lambda::Permission
