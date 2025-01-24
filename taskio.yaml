@@ -74,7 +74,7 @@ Resources:
   PermissionTaskioHealthCheckApi:
     Type: AWS::Lambda::Permission
     Properties:
-      # Igual, el nombre lógico de la Lambda es "TaskioHealthCheckLambda"
+      # Igual,test la Lambda es "TaskioHealthCheckLambda"
       FunctionName: !GetAtt TaskioHealthCheckLambda.Arn
       Action: "lambda:InvokeFunction"
       Principal: "apigateway.amazonaws.com"
