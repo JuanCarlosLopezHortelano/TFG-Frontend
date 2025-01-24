@@ -69,6 +69,23 @@ export interface Job {
   status: 'open' | 'in-progress' | 'completed';
 }
 
+// models/types.ts
+
+export interface Application {
+  /** Identificador único de la solicitud. */
+  id: string;
+  /** ID del Job al que aplica. */
+  jobId: string;
+  /** ID del usuario (worker) que se postula. */
+  userId: string;
+  /** Mensaje opcional con su carta de presentación. */
+  message?: string;
+  /** Estado actual de la solicitud. */
+  status: 'pending' | 'approved' | 'rejected';
+  /** Fecha de creación (ISO string). */
+  createdAt: string;
+}
+
 
 /** “Activity”: historial de un Job completado con un usuario */
 export interface Activity {
@@ -105,4 +122,16 @@ export interface Review {
   }[];
 
   finalComment: string;    // comentario libre
+}
+
+
+
+/** Solicitudes para un trabajo */
+export interface Application {
+  id: string;                // Identificador único de la solicitud
+  jobId: string;             // ID del trabajo al que aplica
+  userId: string;            // ID del usuario que se postula
+  message?: string;          // Mensaje adicional o carta de presentación
+  status: 'pending' | 'approved' | 'rejected'; // Estado de la solicitud
+  createdAt: string;         // Fecha de creación
 }
