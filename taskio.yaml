@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Ejemplo mínimo con 1 Lambda (Python) + API Gateway /health"
+
+Parameters:
+  EnvName:
+    Type: String
+    Default: dev
+
+Resources:
+  # Rol básico para la Lambda
+  TaskioLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "TaskioLambdaRole-${EnvName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+
+  # Lambda en Python
+  TaskioHealthCheckLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "TaskioHealthCheckLambda-${EnvName}"
+      Handler: "lambda_function.handler"
+      Runtime: "python3.9"
+      Role: !GetAtt TaskioLambdaRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {
+                  "statusCode": 200,
+                  "body": "OK, healthy!"
+              }
+
+  # API Gateway 
+  TaskioApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "TaskioApi-${EnvName}"
+
+  # Recurso /health
+  TaskioHealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ParentId: !GetAtt TaskioApiGateway.RootResourceId
+      PathPart: "health"
+
+  # Método GET /health -> Lambda
+  TaskioHealthGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioHealthResource
+      HttpMethod: "GET"
+      AuthorizationType: "NONE"
+      Integration:
+        Type: "AWS"
+        IntegrationHttpMethod: "POST"
+        # Aquí la referencia a "TaskioHealthCheckLambda" con .Arn
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioHealthCheckLambda.Arn}/invocations"
+        IntegrationResponses:
+          - StatusCode: "200"
+      MethodResponses:
+        - StatusCode: "200"
+
+  # Permitir que API Gateway invoque la Lambda
+  PermissionTaskioHealthCheckApi:
+    Type: AWS::Lambda::Permission
+    Properties:
+      # Igual, el nombre lógico de la Lambda es "TaskioHealthCheckLambda"
+      FunctionName: !GetAtt TaskioHealthCheckLambda.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      # Use la referencia a "TaskioApiGateway" y la ruta GET /health
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*/GET/health"
+
+  # Deployment + Stage
+  TaskioApiDeploymentDev:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - TaskioHealthGetMethod
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      StageName: !Sub "${EnvName}"
+
+Outputs:
+  ApiUrl:
+    Description: "URL base de la API"
+    Value: !Sub "https://${TaskioApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvName}"
