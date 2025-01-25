@@ -1,10 +1,14 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "PRUEBAAAAA"
+Description: |
+  Plantilla para gestionar la infraestructura de Taskio,
+  incluyendo DynamoDB, Lambdas, y API Gateway.
+
 
 Parameters:
   EnvName:
     Type: String
     Default: dev
+    Description: "Nombre del entorno (dev, staging, prod)"
 
 Resources:
   # Rol básico para la Lambda
@@ -21,6 +25,160 @@ Resources:
             Action: "sts:AssumeRole"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - PolicyName: "DynamoDBAccessPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Resource:
+                  - !GetAtt JobsTable.Arn
+                  - !GetAtt ApplicationsTable.Arn
+
+
+  # Tabla de DynamoDB para Jobs
+  JobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "TaskioJobsTable-${EnvName}"
+      AttributeDefinitions:
+        - AttributeName: "job_id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "job_id"
+          KeyType: "HASH"
+      BillingMode: PAY_PER_REQUEST
+
+
+  # Tabla de DynamoDB para Applications
+  ApplicationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "TaskioApplicationsTable-${EnvName}"
+      AttributeDefinitions:
+        - AttributeName: "application_id"
+          AttributeType: "S"
+        - AttributeName: "jobId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "application_id"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "JobIdIndex"
+          KeySchema:
+            - AttributeName: "jobId"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+      BillingMode: PAY_PER_REQUEST
+
+
+  # API Gateway
+    
+  TaskioApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "TaskioApi-${EnvName}"
+
+  # Recurso /health
+  TaskioHealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ParentId: !GetAtt TaskioApiGateway.RootResourceId
+      PathPart: "health"
+      
+
+  # Recurso /jobs
+  TaskioJobsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ParentId: !GetAtt TaskioApiGateway.RootResourceId
+      PathPart: "jobs"
+
+
+  # Método GET /health -> Lambda
+  TaskioHealthGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioHealthResource
+      HttpMethod: "GET"
+      AuthorizationType: "NONE"
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioHealthCheckLambda.Arn}/invocations"
+        IntegrationResponses:
+          - StatusCode: "200"
+      MethodResponses:
+        - StatusCode: "200"
+
+  # Método GET /jobs -> Lambda
+  TaskioJobsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioJobsResource
+      HttpMethod: "GET"
+      AuthorizationType: "NONE"
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioJobsLambda.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: "200"
+
+  # Método POST /jobs -> Lambda
+  TaskioJobsPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioJobsResource
+      HttpMethod: "POST"
+      AuthorizationType: "NONE"
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioJobsLambda.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: "201"
+
+
+  # Metodos OPTIONS para CORS
+  TaskioJobsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioJobsResource
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      Integration:
+        Type: "MOCK"
+        IntegrationHttpMethod: "OPTIONS"
+        Uri: "http://example.com" # No importa, es un mock
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  
 
   # Lambda para HealthCheck
   TaskioHealthCheckLambda:
@@ -38,7 +196,7 @@ Resources:
                   "body": "OK, healthy!"
               }
 
-  # Lambda para Jobs
+  # Lambda para Jobs (GET y POST)
   TaskioJobsLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -46,69 +204,101 @@ Resources:
       Handler: "lambda_function.handler"
       Runtime: "python3.9"
       Role: !GetAtt TaskioLambdaRole.Arn
+      Environment:
+        Variables:
+          JOBS_TABLE_NAME: !Ref JobsTable
+          APPLICATIONS_TABLE_NAME: !Ref ApplicationsTable
       Code:
         ZipFile: |
+          import json
+          import os
+          import boto3
+          from boto3.dynamodb.conditions import Key
+
+          dynamodb = boto3.resource('dynamodb')
+          jobs_table = dynamodb.Table(os.environ['JOBS_TABLE_NAME'])
+          applications_table = dynamodb.Table(os.environ['APPLICATIONS_TABLE_NAME'])
+
           def handler(event, context):
-              return {
-                  "statusCode": 200,
-                  "body": "Aquí va la lista de Jobs!"
-              }
+              http_method = event['httpMethod']
+              
+              if http_method == 'GET':
+                  return get_jobs(event)
+              elif http_method == 'POST':
+                  return create_job(event)
+              else:
+                  return {
+                      "statusCode": 405,
+                      "body": json.dumps({"message": "Method Not Allowed"})
+                  }
 
-  # API Gateway
-  TaskioApiGateway:
-    Type: AWS::ApiGateway::RestApi
-    Properties:
-      Name: !Sub "TaskioApi-${EnvName}"
+          def get_jobs(event):
+              try:
+                  response = jobs_table.scan()
+                  jobs = response.get('Items', [])
+                  
+                  # Manejar paginación
+                  while 'LastEvaluatedKey' in response:
+                    response = jobs_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                    jobs.extend(response.get('Items', []))
+                  
+                  return {
+                      "statusCode": 200,
+                      "body": json.dumps(jobs)
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"message": str(e)})
+                  }
 
-  # Recurso /health
-  TaskioHealthResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !Ref TaskioApiGateway
-      ParentId: !GetAtt TaskioApiGateway.RootResourceId
-      PathPart: "health"
+          def create_job(event):
+              try:
+                  body = json.loads(event['body'])
+                  
+                  # Validar los campos necesarios
+                  required_fields = ["job_id", "title", "shortDescription", "longDescription", "category", "location", "rate", "duration", "createdAt", "postedBy"]
+                  for field in required_fields:
+                      if field not in body:
+                          return {
+                              "statusCode": 400,
+                              "body": json.dumps({"message": f"Missing field: {field}"})
+                          }
+                  
+                  # Crear el objeto Job
+                  job = {
+                      "job_id": body['job_id'],
+                      "title": body['title'],
+                      "shortDescription": body['shortDescription'],
+                      "longDescription": body['longDescription'],
+                      "category": body['category'],
+                      "location": body['location'],
+                      "rate": body['rate'],
+                      "duration": body['duration'],
+                      "createdAt": body['createdAt'],
+                      "rating": 0,
+                      "ratingCount": 0,
+                      "postedBy": body['postedBy'],
+                      "applicants": [],
+                      "status": "open"
+                  }
+                  
+                  # Insertar el Job en la tabla
+                  jobs_table.put_item(Item=job)
+                  
+                  return {
+                      "statusCode": 201,
+                      "body": json.dumps({"message": "Job creado exitosamente.", "job": job})
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"message": str(e)})
+                  }
 
-  # Recurso /jobs
-  TaskioJobsResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !Ref TaskioApiGateway
-      ParentId: !GetAtt TaskioApiGateway.RootResourceId
-      PathPart: "jobs"
 
-  # Método GET /health -> Lambda
-  TaskioHealthGetMethod:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !Ref TaskioApiGateway
-      ResourceId: !Ref TaskioHealthResource
-      HttpMethod: "GET"
-      AuthorizationType: "NONE"
-      Integration:
-        Type: "AWS"
-        IntegrationHttpMethod: "POST"
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioHealthCheckLambda.Arn}/invocations"
-        IntegrationResponses:
-          - StatusCode: "200"
-      MethodResponses:
-        - StatusCode: "200"
 
-  # Método GET /jobs -> Lambda
-  TaskioJobsGetMethod:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !Ref TaskioApiGateway
-      ResourceId: !Ref TaskioJobsResource
-      HttpMethod: "GET"
-      AuthorizationType: "NONE"
-      Integration:
-        Type: "AWS"
-        IntegrationHttpMethod: "POST"
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioJobsLambda.Arn}/invocations"
-        IntegrationResponses:
-          - StatusCode: "200"
-      MethodResponses:
-        - StatusCode: "200"
+  
 
   # Permitir que API Gateway invoque las Lambdas
   PermissionTaskioHealthCheckApi:
@@ -133,6 +323,9 @@ Resources:
     DependsOn:
       - TaskioHealthGetMethod
       - TaskioJobsGetMethod
+      - TaskioJobsPostMethod
+      - TaskioJobsOptionsMethod
+
     Properties:
       RestApiId: !Ref TaskioApiGateway
       StageName: !Sub "${EnvName}"
@@ -141,3 +334,9 @@ Outputs:
   ApiUrl:
     Description: "URL base de la API"
     Value: !Sub "https://${TaskioApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvName}"
+  JobsTableName:
+    Description: "Nombre de la Tabla de Jobs"
+    Value: !Ref JobsTable
+  ApplicationsTableName:
+    Description: "Nombre de la Tabla de Applications"
+    Value: !Ref ApplicationsTable
