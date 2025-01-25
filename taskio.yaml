@@ -311,12 +311,13 @@ Resources:
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*/GET/health"
 
   PermissionTaskioJobsApi:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt TaskioJobsLambda.Arn
-      Action: "lambda:InvokeFunction"
-      Principal: "apigateway.amazonaws.com"
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*/GET/jobs"
+  Type: AWS::Lambda::Permission
+  Properties:
+    FunctionName: !GetAtt TaskioJobsLambda.Arn
+    Action: "lambda:InvokeFunction"
+    Principal: "apigateway.amazonaws.com"
+    SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*"
+
 
   # Deployment + Stage
   TaskioApiDeploymentDev:
