@@ -1,16 +1,37 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Plantilla para gestionar la infraestructura de Taskio,
-  incluyendo DynamoDB, Lambdas, y API Gateway.
+  incluyendo DynamoDB, Lambdas, API Gateway y Cognito Authorizer.
 
 
 Parameters:
+
   EnvName:
     Type: String
     Default: dev
     Description: "Nombre del entorno (dev, staging, prod)"
+  
+  ExistingUserPoolArn:
+    Type: String
+    Description: "ARN del User Pool existente"
+
+
+
+     
 
 Resources:
+  MyCognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: taskio-authorizer
+      Type: COGNITO_USER_POOLS
+      RestApiId: !Ref TaskioApiGateway
+      IdentitySource: method.request.header.Authorization
+      ProviderARNs:
+        - arn:aws:cognito-idp:eu-west-1:677276115170:userpool/eu-west-1_7scp8CGFe
+
+
+
   # Rol básico para la Lambda
   TaskioLambdaRole:
     Type: AWS::IAM::Role
@@ -112,7 +133,8 @@ Resources:
       RestApiId: !Ref TaskioApiGateway
       ResourceId: !Ref TaskioHealthResource
       HttpMethod: "GET"
-      AuthorizationType: "NONE"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref taskio-authorizer
       Integration:
         Type: "AWS_PROXY"
         IntegrationHttpMethod: "POST"
@@ -129,7 +151,8 @@ Resources:
       RestApiId: !Ref TaskioApiGateway
       ResourceId: !Ref TaskioJobsResource
       HttpMethod: "GET"
-      AuthorizationType: "NONE"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref taskio-authorizer
       Integration:
         Type: "AWS_PROXY"
         IntegrationHttpMethod: "POST"
@@ -144,7 +167,8 @@ Resources:
       RestApiId: !Ref TaskioApiGateway
       ResourceId: !Ref TaskioJobsResource
       HttpMethod: "POST"
-      AuthorizationType: "NONE"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref taskio-authorizer
       Integration:
         Type: "AWS_PROXY"
         IntegrationHttpMethod: "POST"
