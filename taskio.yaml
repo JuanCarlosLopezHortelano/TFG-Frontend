@@ -13,7 +13,7 @@ Parameters:
   
   ExistingUserPoolArn:
     Type: String
-    default: "arn:aws:cognito-idp:eu-west-1:677276115170:userpool/eu-west-1_7scp8CGFe"
+    Default: "arn:aws:cognito-idp:eu-west-1:677276115170:userpool/eu-west-1_7scp8CGFe"
     Description: "ARN del User Pool existente"
 
 
