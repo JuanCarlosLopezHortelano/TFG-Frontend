@@ -73,9 +73,18 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "job_id"
           AttributeType: "S"
+        - AttributeName: "userId"
+          AttributeType: "S"
       KeySchema:
         - AttributeName: "job_id"
           KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "UserIdIndex"
+          KeySchema:
+            - AttributeName: "userId"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
       BillingMode: PAY_PER_REQUEST
 
 
@@ -89,6 +98,8 @@ Resources:
           AttributeType: "S"
         - AttributeName: "jobId"
           AttributeType: "S"
+        - AttributeName: "userId"
+          AttributeType: "S"
       KeySchema:
         - AttributeName: "application_id"
           KeyType: "HASH"
@@ -96,6 +107,72 @@ Resources:
         - IndexName: "JobIdIndex"
           KeySchema:
             - AttributeName: "jobId"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+        - IndexName: "UserIdIndex"
+          KeySchema:
+            - AttributeName: "userId"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+      BillingMode: PAY_PER_REQUEST
+
+  # Tabla de DynamoDB para Applications
+  ActivitiesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "TaskioActivitiesTable-${EnvName}"
+      AttributeDefinitions:
+        - AttributeName: "activity_id"
+          AttributeType: "S"
+        - AttributeName: "userId"
+          AttributeType: "S"
+        - AttributeName: "jobId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "activity_id"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "UserIdIndex"
+          KeySchema:
+            - AttributeName: "userId"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+        - IndexName: "JobIdIndex"
+          KeySchema:
+            - AttributeName: "jobId"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+      BillingMode: PAY_PER_REQUEST
+
+  # Tabla de DynamoDB para Applications
+  ReviewsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "TaskioReviewsTable-${EnvName}"
+      AttributeDefinitions:
+        - AttributeName: "review_id"
+          AttributeType: "S"
+        - AttributeName: "reviewerId"
+          AttributeType: "S"
+        - AttributeName: "activityId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "review_id"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "RevieweeIdIndex"
+          KeySchema:
+            - AttributeName: "reviewerId"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+        - IndexName: "ActivityIdIndex"
+          KeySchema:
+            - AttributeName: "activityId"
               KeyType: "HASH"
           Projection:
             ProjectionType: "ALL"
@@ -367,3 +444,9 @@ Outputs:
   ApplicationsTableName:
     Description: "Nombre de la Tabla de Applications"
     Value: !Ref ApplicationsTable
+  ActivitiesTableName:
+    Description: "Nombre de la Tabla de Activities"
+    Value: !Ref ActivitiesTable
+  ReviewsTableName:
+    Description: "Nombre de la Tabla de Reviews"
+    Value: !Ref ReviewsTable
