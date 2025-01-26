@@ -13,6 +13,7 @@ Parameters:
   
   ExistingUserPoolArn:
     Type: String
+    default: "arn:aws:cognito-idp:eu-west-1:677276115170:userpool/eu-west-1_7scp8CGFe"
     Description: "ARN del User Pool existente"
 
 
@@ -28,7 +29,7 @@ Resources:
       RestApiId: !Ref TaskioApiGateway
       IdentitySource: method.request.header.Authorization
       ProviderARNs:
-        - arn:aws:cognito-idp:eu-west-1:677276115170:userpool/eu-west-1_7scp8CGFe
+        - !Ref ExistingUserPoolArn
 
 
 
