@@ -525,7 +525,6 @@ Resources:
 
           dynamodb = boto3.resource('dynamodb')
           jobs_table = dynamodb.Table(os.environ['JOBS_TABLE_NAME'])
-          applications_table = dynamodb.Table(os.environ['APPLICATIONS_TABLE_NAME'])
 
           def handler(event, context):
               http_method = event['httpMethod']
@@ -547,12 +546,12 @@ Resources:
                   
                   # Manejar paginación
                   while 'LastEvaluatedKey' in response:
-                    response = jobs_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-                    jobs.extend(response.get('Items', []))
+                      response = jobs_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                      jobs.extend(response.get('Items', []))
                   
                   return {
                       "statusCode": 200,
-                      "body": json.dumps(jobs)
+                      "body": json.dumps(jobs, default=str)  # Evita errores con Decimal
                   }
               except Exception as e:
                   return {
@@ -644,15 +643,15 @@ Resources:
               try:
                   response = skills_table.scan()
                   skills = response.get('Items', [])
-                  
+
                   # Manejo de paginación
                   while 'LastEvaluatedKey' in response:
                       response = skills_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
                       skills.extend(response.get('Items', []))
-                  
+
                   return {
                       "statusCode": 200,
-                      "body": json.dumps(skills)
+                      "body": json.dumps(skills, default=str)  # Evita errores con Decimal
                   }
               except Exception as e:
                   return {
@@ -839,7 +838,8 @@ Resources:
                   while 'LastEvaluatedKey' in response:
                       response = activities_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
                       activities.extend(response.get('Items', []))
-                  
+                  activities["rating"] = float(activities["rating"])
+                  activities["comment"] = str(activities["comment"])
                   return {
                       "statusCode": 200,
                       "body": json.dumps(activities)
@@ -907,9 +907,8 @@ Resources:
                       "body": json.dumps({"message": str(e)})
                   }
 
-  
-  # Lambda para Reviews
- 
+
+# Lambda para Reviews
   TaskioReviewsLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -931,57 +930,53 @@ Resources:
           reviews_table = dynamodb.Table(os.environ['REVIEWS_TABLE_NAME'])
 
           def handler(event, context):
-            http_method = event["httpMethod"]
+              http_method = event.get("httpMethod", "")
+
               if http_method == "GET":
-                  return get_applications(event)
+                  return get_reviews(event)
               elif http_method == "POST":
-                  return create_application(event)
+                  return create_review(event)
               else:
                   return {
                       "statusCode": 405,
                       "body": json.dumps({"message": "Method Not Allowed"})
-                  }  
+                  }
 
-          def get_applications(event):
-            try:
-                  # Leer query params (si quieres filtrar por userId o jobId)
-                  params = event.get("queryStringParameters", {})
-                  user_id = params.get("userId")
-                  job_id = params.get("jobId")
+          def get_reviews(event):
+              try:
+                  response = reviews_table.scan()
+                  reviews = response.get('Items', [])
 
-                  if user_id:
-                      # Query GSI userId
-                      response = applications_table.query(
-                          IndexName="UserIdIndex",
-                          KeyConditionExpression="userId = :uid",
-                          ExpressionAttributeValues={":uid": user_id}
-                      )
-                  elif job_id:
-                      # Query GSI jobId
-                      response = applications_table.query(
-                          IndexName="JobIdIndex",
-                          KeyConditionExpression="jobId = :jid",
-                          ExpressionAttributeValues={":jid": job_id}
-                      )
-                  else:
-                      # Si no hay filtro, scan
-                      response = applications_table.scan()
+                  # Paginación (por si hay más items)
+                  while 'LastEvaluatedKey' in response:
+                      response = reviews_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                      reviews.extend(response.get('Items', []))
 
-                  items = response.get("Items", [])
+                  # Convertir a JSON. default=str para evitar errores con Decimal
                   return {
                       "statusCode": 200,
-                      "body": json.dumps(items)
+                      "body": json.dumps(reviews, default=str)
                   }
               except Exception as e:
                   return {
                       "statusCode": 500,
                       "body": json.dumps({"message": str(e)})
-                  }  
+                  }
 
-          def create_application(event):
-            try:
+          def create_review(event):
+              try:
                   body = json.loads(event["body"])
-                  required_fields = ["application_id", "jobId", "userId", "status"]
+                  
+                  # Ajustar fields según tu UML para "Review"
+                  required_fields = [
+                      "review_id",      # ID de la review
+                      "reviewerId",     # Quién escribe la review
+                      "revieweeId",     # A quién se reseña
+                      "activityId",
+                      "createdAt",
+                      "questionRatings",  # array de {questionId, rating}
+                      "finalComment"
+                  ]
                   for f in required_fields:
                       if f not in body:
                           return {
@@ -989,21 +984,24 @@ Resources:
                               "body": json.dumps({"message": f"Missing field: {f}"})
                           }
 
-                  app_item = {
-                      "application_id": body["application_id"],
-                      "jobId": body["jobId"],
-                      "userId": body["userId"],
-                      "status": body["status"],
-                      "createdAt": body.get("createdAt", "2025-02-01T10:00:00Z"),
-                      "message": body.get("message", "")
+                  review_item = {
+                      "review_id": body["review_id"],
+                      "reviewerId": body["reviewerId"],
+                      "revieweeId": body["revieweeId"],
+                      "activityId": body["activityId"],
+                      "createdAt": body["createdAt"],
+                      "questionRatings": body["questionRatings"],
+                      "finalComment": body["finalComment"]
                   }
-                  applications_table.put_item(Item=app_item)
+
+                  # Insertar la review en la tabla
+                  reviews_table.put_item(Item=review_item)
 
                   return {
                       "statusCode": 201,
                       "body": json.dumps({
-                          "message": "Application created",
-                          "application": app_item
+                          "message": "Review creado exitosamente.",
+                          "review": review_item
                       })
                   }
               except Exception as e:
@@ -1011,6 +1009,8 @@ Resources:
                       "statusCode": 500,
                       "body": json.dumps({"message": str(e)})
                   }
+
+
 
 
   # Permitir que API Gateway invoque las Lambdas
