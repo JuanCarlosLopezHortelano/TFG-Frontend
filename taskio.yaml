@@ -63,6 +63,9 @@ Resources:
                 Resource:
                   - !GetAtt JobsTable.Arn
                   - !GetAtt ApplicationsTable.Arn
+                  - !GetAtt UserSkillsTable.Arn
+                  - !GetAtt ActivitiesTable.Arn
+                  - !GetAtt ReviewsTable.Arn
 
 
   # Tabla de DynamoDB para Jobs
@@ -83,6 +86,34 @@ Resources:
           KeySchema:
             - AttributeName: "userId"
               KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+      BillingMode: PAY_PER_REQUEST
+
+
+  UserSkillsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "TaskioUserSkillsTable-${EnvName}"
+      AttributeDefinitions:
+        - AttributeName: "userId"
+          AttributeType: "S"
+        - AttributeName: "skillName"
+          AttributeType: "S"
+        - AttributeName: "level"
+          AttributeType: "N"
+      KeySchema:
+        - AttributeName: "userId"
+          KeyType: "HASH"
+        - AttributeName: "skillName"
+          KeyType: "RANGE"
+      GlobalSecondaryIndexes:
+        - IndexName: "SkillNameIndex"
+          KeySchema:
+            - AttributeName: "skillName"
+              KeyType: "HASH"
+            - AttributeName: "level"
+              KeyType: "RANGE"
           Projection:
             ProjectionType: "ALL"
       BillingMode: PAY_PER_REQUEST
@@ -203,6 +234,41 @@ Resources:
       ParentId: !GetAtt TaskioApiGateway.RootResourceId
       PathPart: "jobs"
 
+  
+  # Recurso /skills
+  TaskioSkillsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ParentId: !GetAtt TaskioApiGateway.RootResourceId
+      PathPart: "skills"
+
+  # Recurso /applications
+  TaskioApplicationsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ParentId: !GetAtt TaskioApiGateway.RootResourceId
+      PathPart: "applications"
+
+  # Recurso /activities
+  TaskioActivitiesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ParentId: !GetAtt TaskioApiGateway.RootResourceId
+      PathPart: "activities"
+  
+  # Recurso /reviews
+  TaskioReviewsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ParentId: !GetAtt TaskioApiGateway.RootResourceId
+      PathPart: "reviews"
+
+
+
 
   # Método GET /health -> Lambda
   TaskioHealthGetMethod:
@@ -281,7 +347,146 @@ Resources:
             method.response.header.Access-Control-Allow-Methods: true
             method.response.header.Access-Control-Allow-Origin: true
 
-    
+  # Método Get /skills -> Lambda
+  TaskioSkillsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioSkillsResource
+      HttpMethod: "GET"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref MyCognitoAuthorizer
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioSkillsLambda.Arn}/invocations"
+        IntegrationResponses:
+          - StatusCode: "200"
+      MethodResponses:
+        - StatusCode: "200"
+
+
+  # Método Post /skills -> Lambda
+  TaskioSkillsPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioSkillsResource
+      HttpMethod: "POST"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref MyCognitoAuthorizer
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioSkillsLambda.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: "201"      
+
+
+  # Método Get /applications -> Lambda
+  TaskioApplicationsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioApplicationsResource
+      HttpMethod: "GET"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref MyCognitoAuthorizer
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioApplicationsLambda.Arn}/invocations"
+        IntegrationResponses:
+          - StatusCode: "200"
+      MethodResponses:
+        - StatusCode: "200"
+
+  # Método Post /applications -> Lambda
+  TaskioApplicationsPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioApplicationsResource
+      HttpMethod: "POST"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref MyCognitoAuthorizer
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioApplicationsLambda.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: "201"
+
+  # Método Get /activities -> Lambda
+  TaskioActivitiesGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioActivitiesResource
+      HttpMethod: "GET"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref MyCognitoAuthorizer
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioActivitiesLambda.Arn}/invocations"
+        IntegrationResponses:
+          - StatusCode: "200"
+      MethodResponses:
+        - StatusCode: "200"
+
+  # Método Post /activities -> Lambda
+  TaskioActivitiesPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioActivitiesResource
+      HttpMethod: "POST"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref MyCognitoAuthorizer
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioActivitiesLambda.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: "201"
+
+  # Método Get /reviews -> Lambda
+  TaskioReviewsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioReviewsResource
+      HttpMethod: "GET"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref MyCognitoAuthorizer
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioReviewsLambda.Arn}/invocations"
+        IntegrationResponses:
+          - StatusCode: "200"
+      MethodResponses:
+        - StatusCode: "200"
+
+  # Método Post /reviews -> Lambda
+  TaskioReviewsPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref TaskioApiGateway
+      ResourceId: !Ref TaskioReviewsResource
+      HttpMethod: "POST"
+      AuthorizationType: "COGNITO_USER_POOLS"
+      AuthorizerId: !Ref MyCognitoAuthorizer
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TaskioReviewsLambda.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: "201"
+
+
+
 
   # Lambda para HealthCheck
   TaskioHealthCheckLambda:
@@ -401,7 +606,412 @@ Resources:
 
 
 
+  # Lambda para Skills
+  TaskioSkillsLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "TaskioSkillsLambda-${EnvName}"
+      Handler: "lambda_function.handler"
+      Runtime: "python3.9"
+      Role: !GetAtt TaskioLambdaRole.Arn
+      Environment:
+        Variables:
+          SKILLS_TABLE_NAME: !Ref UserSkillsTable
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+          from boto3.dynamodb.conditions import Key
+
+          dynamodb = boto3.resource('dynamodb')
+          skills_table = dynamodb.Table(os.environ['SKILLS_TABLE_NAME'])
+
+          def handler(event, context):
+              http_method = event.get('httpMethod', '')
+
+              if http_method == 'GET':
+                  return get_skills(event)
+              elif http_method == 'POST':
+                  return create_skill(event)
+              else:
+                  return {
+                      "statusCode": 405,
+                      "body": json.dumps({"message": "Method Not Allowed"})
+                  }
+
+          def get_skills(event):
+              try:
+                  response = skills_table.scan()
+                  skills = response.get('Items', [])
+                  
+                  # Manejo de paginación
+                  while 'LastEvaluatedKey' in response:
+                      response = skills_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                      skills.extend(response.get('Items', []))
+                  
+                  return {
+                      "statusCode": 200,
+                      "body": json.dumps(skills)
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"message": str(e)})
+                  }
+
+          def create_skill(event):
+              try:
+                  body = json.loads(event['body'])
+                  
+                  # Validar campos necesarios
+                  required_fields = ["userId", "skillName", "level"]
+                  for f in required_fields:
+                      if f not in body:
+                          return {
+                              "statusCode": 400,
+                              "body": json.dumps({"message": f"Missing field: {f}"})
+                          }
+                  
+                  # Crear el item skill
+                  skill_item = {
+                      "userId": body["userId"],
+                      "skillName": body["skillName"],
+                      "level": int(body["level"]),
+                  }
+                  # Insertar el skill en la tabla
+                  skills_table.put_item(Item=skill_item)
+
+                  return {
+                      "statusCode": 201,
+                      "body": json.dumps({"message": "Skill creado exitosamente.", "skill": skill_item})
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"message": str(e)})
+                  }
+
+
+  # Lambda para Applications
+  TaskioApplicationsLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "TaskioApplicationsLambda-${EnvName}"
+      Handler: "lambda_function.handler"
+      Runtime: "python3.9"
+      Role: !GetAtt TaskioLambdaRole.Arn
+      Environment:
+        Variables:
+          APPLICATIONS_TABLE_NAME: !Ref ApplicationsTable
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+          from boto3.dynamodb.conditions import Key
+
+          dynamodb = boto3.resource('dynamodb')
+          applications_table = dynamodb.Table(os.environ['APPLICATIONS_TABLE_NAME'])
+
+          def handler(event, context):
+            http_method = event["httpMethod"]
+            if http_method == "GET":
+                  return get_applications(event)
+              elif http_method == "POST":
+                  return create_application(event)
+              else:
+                  return {
+                      "statusCode": 405,
+                      "body": json.dumps({"message": "Method Not Allowed"})
+                  }
+
+            def get_applications(event):
+                try:
+                    # Leer query params (si quieres filtrar por userId o jobId)
+                    params = event.get("queryStringParameters", {})
+                    user_id = params.get("userId")
+                    job_id = params.get("jobId")
+
+                    if user_id:
+                        # Query GSI userId
+                        response = applications_table.query(
+                            IndexName="UserIdIndex",
+                            KeyConditionExpression="userId = :uid",
+                            ExpressionAttributeValues={":uid": user_id}
+                        )
+                    elif job_id:
+                        # Query GSI jobId
+                        response = applications_table.query(
+                            IndexName="JobIdIndex",
+                            KeyConditionExpression="jobId = :jid",
+                            ExpressionAttributeValues={":jid": job_id}
+                        )
+                    else:
+                        # Si no hay filtro, scan
+                        response = applications_table.scan()
+
+                    items = response.get("Items", [])
+                    return {
+                        "statusCode": 200,
+                        "body": json.dumps(items)
+                    }
+                except Exception as e:
+                    return {
+                        "statusCode": 500,
+                        "body": json.dumps({"message": str(e)})
+                    }
+
+            def create_application(event):
+                try:
+                    body = json.loads(event["body"])
+                    required_fields = ["application_id", "jobId", "userId", "status"]
+                    for f in required_fields:
+                        if f not in body:
+                            return {
+                                "statusCode": 400,
+                                "body": json.dumps({"message": f"Missing field: {f}"})
+                            }
+
+                    app_item = {
+                        "application_id": body["application_id"],
+                        "jobId": body["jobId"],
+                        "userId": body["userId"],
+                        "status": body["status"],
+                        "createdAt": body.get("createdAt", "2025-02-01T10:00:00Z"),
+                        "message": body.get("message", "")
+                    }
+                    applications_table.put_item(Item=app_item)
+
+                    return {
+                        "statusCode": 201,
+                        "body": json.dumps({"message": "Application created", "application": app_item})
+                    }
+                except Exception as e:
+                    return {
+                        "statusCode": 500,
+                        "body": json.dumps({"message": str(e)})
+                    }
+              
+              
+
+
+  # Lambda para Activities
+  TaskioActivitiesLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "TaskioActivitiesLambda-${EnvName}"
+      Handler: "lambda_function.handler"
+      Runtime: "python3.9"
+      Role: !GetAtt TaskioLambdaRole.Arn
+      Environment:
+        Variables:
+          ACTIVITIES_TABLE_NAME: !Ref ActivitiesTable
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+          from boto3.dynamodb.conditions import Key
+
+          dynamodb = boto3.resource('dynamodb')
+          activities_table = dynamodb.Table(os.environ['ACTIVITIES_TABLE_NAME'])
+
+          def handler(event, context):
+              http_method = event.get('httpMethod', '')
+
+              if http_method == 'GET':
+                  return get_activities(event)
+              elif http_method == 'POST':
+                  return create_activity(event)
+              else:
+                  return {
+                      "statusCode": 405,
+                      "body": json.dumps({"message": "Method Not Allowed"})
+                  }
+
+          def get_activities(event):
+              try:
+                  response = activities_table.scan()
+                  activities = response.get('Items', [])
+                  
+                  # Manejo de paginación
+                  while 'LastEvaluatedKey' in response:
+                      response = activities_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                      activities.extend(response.get('Items', []))
+                  
+                  return {
+                      "statusCode": 200,
+                      "body": json.dumps(activities)
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"message": str(e)})
+                  }
+
+          def create_activity(event):
+              try:
+                  body = json.loads(event['body'])
+
+                  # Ajustar fields según el UML
+                  required_fields = [
+                      "activity_id",    # ID único
+                      "jobId", 
+                      "userId",
+                      "title",
+                      "date",
+                      "duration",
+                      "payment",
+                      "status",         # "in-progress", "completed", etc.
+                      "createdAt"
+                  ]
+                  for f in required_fields:
+                      if f not in body:
+                          return {
+                              "statusCode": 400,
+                              "body": json.dumps({"message": f"Missing field: {f}"})
+                          }
+
+                  # rating y comment podrías querer como opcionales
+                  # Ejemplo: si no vienen, los inicializas:
+                  rating_value = body.get("rating", 0)
+                  comment_value = body.get("comment", "")
+
+                  activity_item = {
+                      "activity_id": body["activity_id"],
+                      "jobId": body["jobId"],
+                      "userId": body["userId"],
+                      "title": body["title"],
+                      "date": body["date"],
+                      "rating": rating_value,
+                      "comment": comment_value,
+                      "duration": body["duration"],
+                      "payment": body["payment"],
+                      "status": body["status"],
+                      "createdAt": body["createdAt"]
+                  }
+
+                  activities_table.put_item(Item=activity_item)
+
+                  return {
+                      "statusCode": 201,
+                      "body": json.dumps({
+                          "message": "Activity creado exitosamente.",
+                          "activity": activity_item
+                      })
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"message": str(e)})
+                  }
+
   
+  # Lambda para Reviews
+ 
+  TaskioReviewsLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "TaskioReviewsLambda-${EnvName}"
+      Handler: "lambda_function.handler"
+      Runtime: "python3.9"
+      Role: !GetAtt TaskioLambdaRole.Arn
+      Environment:
+        Variables:
+          REVIEWS_TABLE_NAME: !Ref ReviewsTable
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+          from boto3.dynamodb.conditions import Key
+
+          dynamodb = boto3.resource('dynamodb')
+          reviews_table = dynamodb.Table(os.environ['REVIEWS_TABLE_NAME'])
+
+          def handler(event, context):
+            http_method = event["httpMethod"]
+              if http_method == "GET":
+                  return get_applications(event)
+              elif http_method == "POST":
+                  return create_application(event)
+              else:
+                  return {
+                      "statusCode": 405,
+                      "body": json.dumps({"message": "Method Not Allowed"})
+                  }  
+
+          def get_applications(event):
+            try:
+                  # Leer query params (si quieres filtrar por userId o jobId)
+                  params = event.get("queryStringParameters", {})
+                  user_id = params.get("userId")
+                  job_id = params.get("jobId")
+
+                  if user_id:
+                      # Query GSI userId
+                      response = applications_table.query(
+                          IndexName="UserIdIndex",
+                          KeyConditionExpression="userId = :uid",
+                          ExpressionAttributeValues={":uid": user_id}
+                      )
+                  elif job_id:
+                      # Query GSI jobId
+                      response = applications_table.query(
+                          IndexName="JobIdIndex",
+                          KeyConditionExpression="jobId = :jid",
+                          ExpressionAttributeValues={":jid": job_id}
+                      )
+                  else:
+                      # Si no hay filtro, scan
+                      response = applications_table.scan()
+
+                  items = response.get("Items", [])
+                  return {
+                      "statusCode": 200,
+                      "body": json.dumps(items)
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"message": str(e)})
+                  }  
+
+          def create_application(event):
+            try:
+                  body = json.loads(event["body"])
+                  required_fields = ["application_id", "jobId", "userId", "status"]
+                  for f in required_fields:
+                      if f not in body:
+                          return {
+                              "statusCode": 400,
+                              "body": json.dumps({"message": f"Missing field: {f}"})
+                          }
+
+                  app_item = {
+                      "application_id": body["application_id"],
+                      "jobId": body["jobId"],
+                      "userId": body["userId"],
+                      "status": body["status"],
+                      "createdAt": body.get("createdAt", "2025-02-01T10:00:00Z"),
+                      "message": body.get("message", "")
+                  }
+                  applications_table.put_item(Item=app_item)
+
+                  return {
+                      "statusCode": 201,
+                      "body": json.dumps({
+                          "message": "Application created",
+                          "application": app_item
+                      })
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"message": str(e)})
+                  }
+
 
   # Permitir que API Gateway invoque las Lambdas
   PermissionTaskioHealthCheckApi:
@@ -420,6 +1030,41 @@ Resources:
       Principal: "apigateway.amazonaws.com"
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*"
 
+  PermissionTaskioSkillsApi:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt TaskioSkillsLambda.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*"
+
+
+  PermissionTaskioApplicationsApi:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt TaskioApplicationsLambda.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*"
+
+  PermissionTaskioActivitiesApi:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt TaskioActivitiesLambda.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*"
+
+  PermissionTaskioReviewsApi:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt TaskioReviewsLambda.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TaskioApiGateway}/*"
+
+  
+
 
   # Deployment + Stage
   TaskioApiDeploymentDev:
@@ -429,6 +1074,15 @@ Resources:
       - TaskioJobsGetMethod
       - TaskioJobsPostMethod
       - TaskioJobsOptionsMethod
+      - TaskioSkillsGetMethod
+      - TaskioSkillsPostMethod
+      - TaskioApplicationsGetMethod
+      - TaskioApplicationsPostMethod
+      - TaskioActivitiesGetMethod
+      - TaskioActivitiesPostMethod
+      - TaskioReviewsGetMethod
+      - TaskioReviewsPostMethod
+
 
     Properties:
       RestApiId: !Ref TaskioApiGateway
