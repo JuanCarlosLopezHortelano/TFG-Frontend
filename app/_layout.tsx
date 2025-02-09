@@ -115,7 +115,19 @@ function AppNavigator() {
         }}
       />
 
+      <Stack.Screen
+        name="applyJob"
+        options={{
+          headerShown: true,
+          presentation: 'card',
+          animation: 'slide_from_right',
+          title: 'Aplicar a la Tarea',
+        }}
+      />
+
     </Stack>
+    
+    
   );
 }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, Image, ScrollView, Pressable } from 'react-native';
-import { useLocalSearchParams } from 'expo-router'; // Para obtener parámetros dinámicos
+import { router, useLocalSearchParams } from 'expo-router'; // Para obtener parámetros dinámicos
 import { mockJobs } from '../../services/mock/mockJobs';
 
 export default function TaskDetailScreen() {
@@ -8,6 +8,17 @@ export default function TaskDetailScreen() {
       jobId?: string;
     }>(); 
   
+
+  const handleApplyJob = () => {
+    // Implementar lógica para aplicar a la tarea
+    console.log('Aplicar a la tarea', jobId);
+    router.push(
+      {
+        pathname:'/applyJob',
+        params: { jobId: 'xyz123'},
+      }
+    );
+  }
 
 
   // Obtenemos el trabajo del mock usando el ID pasado como parámetro
@@ -43,7 +54,7 @@ export default function TaskDetailScreen() {
           <Text style={styles.shortDescription}>{job.shortDescription}</Text>
           <Text style={styles.rateText}>Pago: {job.rate} €/hora</Text>
 
-          <Pressable style={styles.applyButton}>
+          <Pressable style={styles.applyButton} onPress={handleApplyJob}>
             <Text style={styles.applyButtonText}>Aplicar</Text>
           </Pressable>
 
