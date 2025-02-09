@@ -13,12 +13,12 @@ import {
 import { BarChart } from 'react-native-chart-kit';
 import { Calendar } from 'react-native-calendars';
 
-import { AuthContext } from '../_layout'; // Ajusta la ruta si tu context está en otro archivo
+import { AuthContext } from '../../context/authContext'; // Ajusta la ruta si tu context está en otro archivo
 
 // Importa tus mocks
-import { mockUsers } from '../services/mock/mockUser';
-import { mockActivities } from '../services/mock/mockActivities';
-import { mockJobs } from '../services/mock/mockJobs';
+import { mockUsers } from '../../services/mock/mockUser';
+import { mockActivities } from '../../services/mock/mockActivities';
+import { mockJobs } from '../../services/mock/mockJobs';
 
 const screenWidth = Dimensions.get('window').width;
 // Define the type for acc

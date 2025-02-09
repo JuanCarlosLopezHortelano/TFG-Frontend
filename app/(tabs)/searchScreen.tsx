@@ -10,12 +10,14 @@ import {
 } from 'react-native';
 
 // Mocks
-import { mockJobs } from '../services/mock/mockJobs';
-import { mockUsers } from '../services/mock/mockUser';
+import { mockJobs } from '../../services/mock/mockJobs';
+import { mockUsers } from '../../services/mock/mockUser';
+import { router } from 'expo-router';
 
 export default function SearchScreen() {
   const [filter, setFilter] = useState<'todo' | 'tareas' | 'personas'>('todo');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   // Diccionario de íconos para cada categoría (opcional)
   const categoryIcons: Record<string, string> = {
@@ -29,7 +31,6 @@ export default function SearchScreen() {
 
   // Tareas: Vienen de mockJobs
   const tareas = mockJobs;
-
   // Personas: Podrías filtrar por roles.includes('worker') o algo similar
   const personas = mockUsers.filter((u) => u.aptitudes);
 
@@ -37,13 +38,13 @@ export default function SearchScreen() {
   const showPersonas = filter === 'todo' || filter === 'personas';
 
   function handleOpenJobDetail(jobId: string) {
-    alert(`Ver detalle de la tarea con id = ${jobId}`);
-    // router.push({ pathname: 'taskDetail', params: { jobId } })
+  //  alert(`Ver detalle de la tarea con id = ${jobId}`);
+     router.push({ pathname: '/taskDetailModal', params: { jobId } })
   }
 
   function handleOpenProfile(userId: string) {
-    alert(`Ver perfil del userId = ${userId}`);
-    // router.push({ pathname: 'publicProfile', params: { userId } })
+    //alert(`Ver perfil del userId = ${userId}`);
+     router.push({ pathname: '/userDetails', params: { userId } })
   }
 
   return (
@@ -61,40 +62,39 @@ export default function SearchScreen() {
           />
         </View>
 
-        {searchFocused ? (
-          <Pressable style={styles.dotButton}>
-            <Text style={styles.dotButtonText}>…</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.filterContainer}>
-            <Pressable 
-              style={[styles.filterButton, filter === 'todo' && styles.filterButtonActive]} 
-              onPress={() => setFilter('todo')}
-            >
-              <Text style={[styles.filterButtonText, filter === 'todo' && styles.filterButtonTextActive]}>
-                Todo
-              </Text>
-            </Pressable>
-            <Pressable 
-              style={[styles.filterButton, filter === 'tareas' && styles.filterButtonActive]} 
-              onPress={() => setFilter('tareas')}
-            >
-              <Text style={[styles.filterButtonText, filter === 'tareas' && styles.filterButtonTextActive]}>
-                Tareas
-              </Text>
-            </Pressable>
-            <Pressable 
-              style={[styles.filterButton, filter === 'personas' && styles.filterButtonActive]} 
-              onPress={() => setFilter('personas')}
-            >
-              <Text style={[styles.filterButtonText, filter === 'personas' && styles.filterButtonTextActive]}>
-                Personas
-              </Text>
-            </Pressable>
-          </View>
-        )}
+        <Pressable 
+          style={styles.dotButton}
+          onPress={() => setShowDropdown(!showDropdown)}
+        >
+          <Text style={styles.dotButtonText}>…</Text>
+        </Pressable>
       </View>
 
+        {/* Filtros */}
+        {showDropdown && (
+        <View style={styles.dropdown}>
+          <Pressable 
+            style={[styles.dropdownItem, filter === 'todo' && styles.dropdownItemActive]} 
+            onPress={() => { setFilter('todo'); setShowDropdown(false); }}
+          >
+            <Text style={[styles.dropdownItemText, filter === 'todo' && styles.dropdownItemTextActive]}>Todo</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.dropdownItem, filter === 'tareas' && styles.dropdownItemActive]} 
+            onPress={() => { setFilter('tareas'); setShowDropdown(false); }}
+          >
+            <Text style={[styles.dropdownItemText, filter === 'tareas' && styles.dropdownItemTextActive]}>Tareas</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.dropdownItem, filter === 'personas' && styles.dropdownItemActive]} 
+            onPress={() => { setFilter('personas'); setShowDropdown(false); }}
+          >
+            <Text style={[styles.dropdownItemText, filter === 'personas' && styles.dropdownItemTextActive]}>Personas</Text>
+          </Pressable>
+        </View>
+      )}
+
+        
       {/* Resultados */}
       <ScrollView style={styles.resultsContainer} contentContainerStyle={{ paddingBottom: 100 }}>
         
@@ -207,33 +207,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  filterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  filterButton: {
-    backgroundColor: elementBg,
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginLeft: 5,
-    shadowColor,
-    shadowOffset: { width: 2, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  filterButtonActive: {
-    backgroundColor: '#4C74D9',
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-  },
-  filterButtonTextActive: {
-    color: '#fff',
-  },
+  
   dotButton: {
     backgroundColor: elementBg,
     borderRadius: 20,
@@ -251,6 +225,37 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
   },
+   /* Dropdown de filtros */
+   dropdown: {
+    backgroundColor: elementBg,
+    marginHorizontal: 20,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    shadowColor,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  dropdownItem: {
+    paddingVertical: 8,
+  },
+  dropdownItemActive: {
+    backgroundColor: '#4C74D9',
+    borderRadius: 5,
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+  },
+  dropdownItemTextActive: {
+    color: '#fff',
+  },
+
+  /*RESULTADOS*/
   resultsContainer: {
     flex: 1,
     paddingHorizontal: 20,

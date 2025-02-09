@@ -1,5 +1,5 @@
 // src/services/mockReviews.ts
-import { Review } from '../../../types/types';
+import { Review } from '../../types/types';
 
 export const mockReviews: Review[] = [
   {

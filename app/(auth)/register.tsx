@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signUp } from '../services/cognitoConfig';
+import { signUp } from '../../services/cognitoConfig';
 import { useAuthFlow } from '../../context/authFlowContext';
 
 export default function RegisterScreen() {

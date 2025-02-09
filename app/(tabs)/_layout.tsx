@@ -57,25 +57,10 @@ export default function TabLayout() {
       }}
     />
   
-    {/* 5) Detalles de tareas */}
-    <Tabs>
-      {/* Tus otras pestañas */}
-      <Tabs.Screen name="taskDetail" options={{
-        title: "Detalles",
-       
-        headerShown: true,
-      }} />
+   
     </Tabs>
   
-    {/* 6) Vista de usuario */}
-    <Tabs.Screen
-      name="userDetails"
-      options={{
-        title: 'Usuario',
-        tabBarIcon: ({ color }) => <TabBarIcon name="address-card-o" color={color} />,
-      }}
-    />
-  </Tabs>
+
   
   );
 }

@@ -6,6 +6,7 @@ import {
     AuthenticationDetails,
   } from 'amazon-cognito-identity-js';
   import * as SecureStore from 'expo-secure-store';
+  import { Platform } from 'react-native'; // Para detectar si es web o móvil
 
   // Reemplaza estos valores con los de tu User Pool
   const poolData = {
@@ -64,21 +65,30 @@ import {
           const accessToken = session.getAccessToken().getJwtToken();
           const refreshToken = session.getRefreshToken().getToken();
           const idToken = session.getIdToken().getJwtToken();
-          console.log('accessToken', accessToken);
+          
+          // -----------------------
+          // DISTINGUIR WEB vs MÓVIL
+          // -----------------------
+          if (Platform.OS === 'web') {
+            // Guardar en localStorage
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
+            localStorage.setItem('idToken', idToken);
+          } else 
+          {
+            try {
 
-          console.log('accessToken', accessToken);
-          console.log('refreshToken', refreshToken);
-          console.log('idToken', idToken);
-
-
-          // Guardar en SecureStore
-          await SecureStore.setItemAsync('accessToken', accessToken);
-          await SecureStore.setItemAsync('refreshToken', refreshToken);
-          await SecureStore.setItemAsync('idToken', idToken);
-
-          // Retorna lo que necesites
-          resolve({ user: cognitoUser, session });
-
+              // Guardar en SecureStore
+              await SecureStore.setItemAsync('accessToken', accessToken);
+              await SecureStore.setItemAsync('refreshToken', refreshToken);
+              await SecureStore.setItemAsync('idToken', idToken);}
+            
+            
+            catch (err) {
+              console.log('Error guardando tokens en SecureStore', err);
+            }
+          }
+          
 
           // session trae los tokens (IdToken, AccessToken, RefreshToken)
           resolve({ user: cognitoUser, session });

@@ -1,5 +1,5 @@
 // app/services/mockJobs.ts
-import { Job } from '../../../types/types';
+import { Job } from '../../types/types';
 
 export const mockJobs: Job[] = [
   {
@@ -32,7 +32,7 @@ export const mockJobs: Job[] = [
     createdAt: '2025-01-10T08:00:00Z',
     rating: 4.5,
     ratingCount: 25,
-    postedBy: 'user-004',
+    postedBy: 'user-001',
     applicants: ['user-005'],
     status: 'open',
   },
@@ -49,7 +49,7 @@ export const mockJobs: Job[] = [
     createdAt: '2025-01-08T15:00:00Z',
     rating: 5,
     ratingCount: 12,
-    postedBy: 'user-006',
+    postedBy: 'user-001',
     applicants: [],
     status: 'open',
   },

@@ -9,7 +9,7 @@ import {
   ScrollView 
 } from 'react-native';
 // Importamos el mock
-import { mockJobs } from '../services/mock/mockJobs';
+import { mockJobs } from '../../services/mock/mockJobs';
 import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {

@@ -1,10 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View, Image, ScrollView, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router'; // Para obtener parámetros dinámicos
-import { mockJobs } from '../services/mock/mockJobs';
+import { mockJobs } from '../../services/mock/mockJobs';
 
 export default function TaskDetailScreen() {
-  const { jobId } = useLocalSearchParams();
+    const { jobId } = useLocalSearchParams<{
+      jobId?: string;
+    }>(); 
+  
+
 
   // Obtenemos el trabajo del mock usando el ID pasado como parámetro
   const job = mockJobs.find((j) => j.id === jobId);

@@ -830,25 +830,31 @@ Resources:
                   }
 
           def get_activities(event):
-              try:
-                  response = activities_table.scan()
-                  activities = response.get('Items', [])
-                  
-                  # Manejo de paginación
-                  while 'LastEvaluatedKey' in response:
-                      response = activities_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-                      activities.extend(response.get('Items', []))
-                  activities["rating"] = float(activities["rating"])
-                  activities["comment"] = str(activities["comment"])
-                  return {
-                      "statusCode": 200,
-                      "body": json.dumps(activities)
-                  }
-              except Exception as e:
-                  return {
-                      "statusCode": 500,
-                      "body": json.dumps({"message": str(e)})
-                  }
+            try:
+                response = activities_table.scan()
+                activities = response.get('Items', [])
+                
+                # Manejo de paginación
+                while 'LastEvaluatedKey' in response:
+                    response = activities_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                    activities.extend(response.get('Items', []))
+                
+                # Convertir los campos "rating" y "comment" para cada actividad
+                for activity in activities:
+                    if "rating" in activity:
+                        activity["rating"] = float(activity["rating"])
+                    if "comment" in activity:
+                        activity["comment"] = str(activity["comment"])
+                
+                return {
+                    "statusCode": 200,
+                    "body": json.dumps(activities, default=str)  # Evita errores con Decimal
+                }
+            except Exception as e:
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps({"message": str(e)})
+                }
 
           def create_activity(event):
               try:

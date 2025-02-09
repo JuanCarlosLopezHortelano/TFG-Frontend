@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import signIn from '../services/cognitoConfig';
-import { AuthContext } from '../_layout';
+import signIn from '../../services/cognitoConfig';
+import { AuthContext } from '../../context/authContext';
 import { useAuthFlow } from '@/context/authFlowContext';
 
 export default function LoginScreen() {
@@ -24,9 +24,9 @@ export default function LoginScreen() {
       const { user, session } = await signIn(email, password);
       Alert.alert('Inicio de sesión correcto', `¡Bienvenido, ${user.getUsername()}!`);
       console.log('SignIn user:', user);
-
+      const token = session.getIdToken().getJwtToken();
       // Notificamos al contexto que se ha iniciado sesión
-      signInContext();
+      signInContext(token);
 
       // Redirigimos al layout de tabs
       router.replace('/(tabs)');

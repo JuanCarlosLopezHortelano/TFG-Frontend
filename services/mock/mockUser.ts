@@ -1,4 +1,4 @@
-import { User, Skill } from '../../../types/types';
+import { User, Skill } from '../../types/types';
 
 const skillComunicacion: Skill = { name: 'Comunicación', level: 5 };
 const skillOrganizacion: Skill = { name: 'Organización', level: 4 };
@@ -11,7 +11,7 @@ export const mockUsers: User[] = [
     name: 'Andrea García',
     email: 'andrea@example.com',
     phone: '+34 612 345 678',
-    avatarUrl: 'https://via.placeholder.com/100',
+    avatarUrl: ('https://picsum.photos/200/200'),
     location: 'Madrid, España',
     about:
       'Promotora de eventos con más de 5 años de experiencia en ferias y promociones. Me apasiona el trato con el público.',

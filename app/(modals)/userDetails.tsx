@@ -1,12 +1,19 @@
 import React from 'react';
 import { StyleSheet, Text, View, Image, ScrollView } from 'react-native';
-import { mockUsers } from '../services/mock/mockUser';
-import { mockActivities } from '../services/mock/mockActivities';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { mockUsers } from '../../services/mock/mockUser';
+import { mockActivities } from '../../services/mock/mockActivities';
 
 export default function ProfileScreen() {
   // Usamos el primer usuario del mock como ejemplo
+  
   const user = mockUsers[0];
+  // Lee el param "userId" de la URL ?userId=XYZ
+  const { userId } = useLocalSearchParams<{
+    userId?: string;
+  }>(); 
 
+  console.log('params', userId);
   if (!user) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
